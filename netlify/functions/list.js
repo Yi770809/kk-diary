@@ -1,0 +1,28 @@
+// 素材列表：GET 返回 [{key, name, category}]
+const { getStore } = require('@netlify/blobs');
+
+exports.handler = async () => {
+  try {
+    const store = getStore('kk-stickers');
+    const items = [];
+    for await (const entry of store.list({ prefix: 'stickers/' })) {
+      const parts = entry.key.split('/'); // stickers/{category}/{ts}_{name}
+      const name = (parts[parts.length - 1] || '').replace(/^\d+_/, '');
+      items.push({
+        key: entry.key,
+        name,
+        category: parts[1] || '其他',
+      });
+    }
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify(items),
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: String((err && err.message) || err) }),
+    };
+  }
+};
