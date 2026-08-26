@@ -26,10 +26,11 @@
     overflow-y:auto;
     backface-visibility:hidden;
     transform:rotateY(0deg);
+    transform-origin:left center;
     transition: transform .8s cubic-bezier(.4,.1,.2,1);
     display:flex; flex-direction:column;
   }
-  .page.back { transform:rotateY(180deg); }
+  .page.flipped { transform:rotateY(-180deg); }
   /* 纸纹 */
   .page::before {
     content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
@@ -191,7 +192,16 @@
 
   function render() {
     pages.forEach((p, i) => {
-      p.classList.toggle('back', i < current);
+      if (i < current) {
+        p.classList.add('flipped');
+        p.style.zIndex = i;
+      } else if (i === current) {
+        p.classList.remove('flipped');
+        p.style.zIndex = 999;
+      } else {
+        p.classList.remove('flipped');
+        p.style.zIndex = total - i;
+      }
     });
     document.getElementById('pos').textContent = (current + 1) + ' / ' + total;
   }
@@ -206,6 +216,7 @@
   // 左右点击区翻页
   const book = document.getElementById('book');
   book.addEventListener('click', function(e) {
+    if (e.target.closest('.toc-item')) return; // 目录跳转优先，不触发翻页
     const r = book.getBoundingClientRect();
     const x = e.clientX - r.left;
     if (x < r.width * 0.4) prevPage();
