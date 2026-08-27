@@ -186,7 +186,7 @@
       name: d.name,
       title: d.title || '',
       category: d.category,
-      src: '/.netlify/functions/serve?key=' + encodeURIComponent(d.key),
+      src: 'https://kk-diary.netlify.app/.netlify/functions/serve?key=' + encodeURIComponent(d.key),
     }));
     return statics.concat(dyns);
   }
@@ -212,7 +212,7 @@
 
   async function loadDyn() {
     try {
-      const r = await fetch('/.netlify/functions/list');
+      const r = await fetch('https://kk-diary.netlify.app/.netlify/functions/list');
       dynStickers = await r.json();
     } catch (e) { dynStickers = []; }
     render();
@@ -250,7 +250,7 @@
         reader.onerror = rej;
         reader.readAsDataURL(picked);
       });
-      const resp = await fetch('/.netlify/functions/upload', {
+      const resp = await fetch('https://kk-diary.netlify.app/.netlify/functions/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

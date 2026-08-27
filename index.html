@@ -330,7 +330,7 @@
   // 加载云端手账数据
   async function loadDiary() {
     try {
-      const r = await fetch('/.netlify/functions/diary');
+      const r = await fetch('https://kk-diary.netlify.app/.netlify/functions/diary');
       diaryData = await r.json();
     } catch (e) { diaryData = { pages: {} }; }
     renderDiary();
@@ -427,13 +427,13 @@
       spList.appendChild(it);
     });
     try {
-      const r = await fetch('/.netlify/functions/list');
+      const r = await fetch('https://kk-diary.netlify.app/.netlify/functions/list');
       const items = await r.json();
       items.forEach(it => {
         const d = document.createElement('div');
         d.className = 'sp-item';
         const img = document.createElement('img');
-        img.src = '/.netlify/functions/serve?key=' + encodeURIComponent(it.key);
+        img.src = 'https://kk-diary.netlify.app/.netlify/functions/serve?key=' + encodeURIComponent(it.key);
         img.loading = 'lazy';
         d.appendChild(img);
         d.title = it.title || it.name || '';
@@ -483,7 +483,7 @@
       };
       diaryData.pages[p.dataset.page] = data;
       try {
-        const r = await fetch('/.netlify/functions/diary', {
+        const r = await fetch('https://kk-diary.netlify.app/.netlify/functions/diary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(diaryData),
