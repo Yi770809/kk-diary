@@ -114,6 +114,8 @@
       <option>花草</option><option>星星月亮</option><option>天空</option>
       <option>爱心</option><option>小动物</option><option>表情包照片</option><option>其他</option>
     </select>
+    <label>给它起个名字（可选，方便以后找）</label>
+    <input type="text" id="titleInput" maxlength="30" placeholder="例如：拽猫表情包" style="width:100%; background:#1a2333; color:#dfe7f5; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:.6em; font-size:.9em; box-sizing:border-box;">
     <label>选择图片</label>
     <div class="file-box" id="fileBox">点这里选图片（支持 PNG / JPG / GIF / WEBP）</div>
     <input type="file" id="fileInput" accept="image/*" style="display:none">
@@ -176,6 +178,7 @@
     const dyns = dynStickers.map(d => ({
       key: d.key,
       name: d.name,
+      title: d.title || '',
       category: d.category,
       src: '/.netlify/functions/serve?key=' + encodeURIComponent(d.key),
     }));
@@ -195,7 +198,7 @@
       const img = document.createElement('img');
       img.src = s.src; img.loading = 'lazy'; img.alt = s.name;
       const nm = document.createElement('div');
-      nm.className = 'nm'; nm.textContent = s.name;
+      nm.className = 'nm'; nm.textContent = s.title || s.name;
       d.appendChild(img); d.appendChild(nm);
       grid.appendChild(d);
     });
@@ -246,6 +249,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: picked.name,
+          title: document.getElementById('titleInput').value.trim(),
           category: document.getElementById('catSel').value,
           data,
           type: picked.type || 'image/png',
@@ -253,7 +257,7 @@
       });
       const j = await resp.json();
       if (!j.ok) throw new Error(j.error || '上传失败');
-      toast('上传成功！已放进素材库 🎉');
+      toast('上传成功！已放进素材库');
       mask.classList.remove('show'); resetPick();
       await loadDyn();
     } catch (e) {
@@ -263,6 +267,7 @@
   };
   function resetPick() {
     picked = null; fileInput.value = '';
+    document.getElementById('titleInput').value = '';
     fileBox.textContent = '点这里选图片（支持 PNG / JPG / GIF / WEBP）';
     fileBox.classList.remove('has');
     preview.style.display = 'none';

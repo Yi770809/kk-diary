@@ -9,9 +9,15 @@ exports.handler = async () => {
     for (const entry of blobs) {
       const parts = entry.key.split('/'); // stickers/{category}/{ts}_{name}
       const name = (parts[parts.length - 1] || '').replace(/^\d+_/, '');
+      let title = '';
+      try {
+        const meta = await store.getMetadata(entry.key);
+        title = (meta && meta.title) || '';
+      } catch (e) { /* ignore */ }
       items.push({
         key: entry.key,
         name,
+        title,
         category: parts[1] || '其他',
       });
     }

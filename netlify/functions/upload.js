@@ -10,6 +10,7 @@ exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
     let name = String(body.name || '').trim();
+    let title = String(body.title || '').trim().slice(0, 30);
     let category = String(body.category || '其他').trim();
     const data = body.data || '';
     const type = String(body.type || 'image/png');
@@ -24,7 +25,7 @@ exports.handler = async (event) => {
     const key = `stickers/${category}/${Date.now()}_${name}`;
     const store = getStore('kk-stickers');
     await store.set(key, Buffer.from(data, 'base64'), {
-      metadata: { name, category, type },
+      metadata: { name, category, type, title },
     });
     return { statusCode: 200, body: JSON.stringify({ ok: true, key }) };
   } catch (err) {
