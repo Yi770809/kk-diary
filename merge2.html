@@ -14,14 +14,11 @@ h1 { font-size:20px; margin-bottom:4px; }
 .upload { border:2px dashed #d9cfbc; border-radius:10px; padding:14px; text-align:center; cursor:pointer; color:#8a8378; font-size:13px; background:#fdfbf6; }
 .upload.on { border-color:#7fb069; background:#f2f8ee; }
 .upload input { display:none; }
-.thumb { display:flex; gap:10px; margin-top:10px; }
-.thumb img { width:calc(50% - 5px); border-radius:8px; background:#eee; min-height:80px; object-fit:contain; }
 .btn { display:block; width:100%; padding:14px; border:none; border-radius:10px; font-size:16px; font-weight:600; color:#fff; background:#7fb069; margin-top:4px; cursor:pointer; }
 .btn:disabled { background:#c8c2b4; }
 .btn.sec { background:#b08d57; margin-top:10px; }
 .canvas-wrap { text-align:center; }
 canvas { max-width:100%; border-radius:8px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.12); }
-.hint { font-size:12px; color:#8a8378; line-height:1.7; margin-top:8px; }
 .steps { font-size:13px; line-height:1.9; color:#5a554c; }
 .steps b { color:#7fb069; }
 .toast { position:fixed; left:50%; bottom:90px; transform:translateX(-50%); background:#3d3a34; color:#fff; padding:9px 18px; border-radius:20px; font-size:13px; opacity:0; transition:opacity .3s; pointer-events:none; z-index:9; }
@@ -30,29 +27,30 @@ canvas { max-width:100%; border-radius:8px; background:#fff; box-shadow:0 2px 8p
 </head>
 <body>
 <h1>证件正反同面 · 拼版</h1>
-<div class="sub">把扫描的正反两张图拼到同一张 A4，保存后打印</div>
+<div class="sub">自动从 A4 扫描图里裁出证件 → 正反拼到同一张 A4</div>
 
 <div class="card">
-  <h2>1. 选图片（正面 / 反面）</h2>
+  <h2>1. 选扫描图（正面 / 反面）</h2>
   <div class="upload" id="boxF">点这里选 <b>正面</b> 扫描图<input type="file" id="fileF" accept="image/*"></div>
   <div class="upload" id="boxB" style="margin-top:8px;">点这里选 <b>反面</b> 扫描图<input type="file" id="fileB" accept="image/*"></div>
-  <div class="thumb" id="thumbs" style="display:none;"></div>
+  <div class="hint" style="margin-top:8px;">扫描设置里的<b>原稿尺寸</b>建议选<b>自动</b>（只扫证件区域）；如果还是整张A4也没事，这里会自动裁剪。</div>
 </div>
 
 <div class="card">
-  <h2>2. 生成拼版图</h2>
-  <button class="btn" id="gen" disabled>生成 A4 拼版图</button>
-  <div class="canvas-wrap" id="wrap" style="display:none;margin-top:12px;">
-    <canvas id="cv"></canvas>
+  <h2>2. 自动裁剪预览</h2>
+  <div class="canvas-wrap">
+    <canvas id="prev"></canvas>
   </div>
-  <button class="btn sec" id="save" style="display:none;">保存图片到相册</button>
+  <div class="hint">绿框 = 自动识别出的证件区域。识别不准就告诉我，我加手动调整。</div>
+  <button class="btn" id="gen" disabled style="margin-top:10px;">按识别框裁剪并拼版</button>
+  <canvas id="cv" style="display:none;margin-top:12px;"></canvas>
+  <button class="btn sec" id="save" style="display:none;">保存拼好的图到相册</button>
 </div>
 
 <div class="card">
-  <h2>打印小贴士</h2>
+  <h2>打印</h2>
   <div class="steps">
-    保存后在相册打开 → 用 <b>Canon PRINT</b> 打印 → 纸张选 <b>A4</b>、<b>无边框关</b>、质量普通即可。<br>
-    若打印机弹密码，就点 <b>扫描→照片打印</b> 那条线（扫描不弹密码），或先重置密码。
+    相册打开保存的图 → <b>Canon PRINT 照片打印</b> → 纸张 <b>A4</b>、<b>无边框关</b>。
   </div>
 </div>
 
@@ -61,53 +59,107 @@ canvas { max-width:100%; border-radius:8px; background:#fff; box-shadow:0 2px 8p
 <script>
 const $ = id => document.getElementById(id);
 let imgF=null, imgB=null;
-function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),2200); }
+let boxF=null, boxB=null; // 识别框 {x,y,w,h} 相对原图
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),2600); }
 
+// 投影法自动检测非背景区域（背景=浅色均匀）
+function detectBox(img){
+  const S=900;
+  const r=S/img.width, w=S, h=Math.round(img.height*r);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const ctx=cv.getContext('2d');
+  ctx.drawImage(img,0,0,w,h);
+  const d=ctx.getImageData(0,0,w,h).data;
+  const rowH=new Array(h).fill(0), colW=new Array(w).fill(0);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const i=(y*w+x)*4, R=d[i], G=d[i+1], B=d[i+2];
+      const mx=Math.max(R,G,B), mn=Math.min(R,G,B);
+      // 非纯白/浅灰背景：有颜色 或 明显偏暗
+      if(mx-mn>28 || mx<215){
+        rowH[y]++; colW[x]++;
+      }
+    }
+  }
+  const thr=Math.max(4, w*0.012);
+  let y0=-1,y1=-1;
+  for(let y=0;y<h;y++){ if(rowH[y]>=thr){ if(y0<0)y0=y; y1=y; } }
+  let x0=-1,x1=-1;
+  for(let x=0;x<w;x++){ if(colW[x]>=thr){ if(x0<0)x0=x; x1=x; } }
+  if(y0<0||x0<0) return null;
+  const pad=Math.round(Math.min(w,h)*0.012);
+  y0=Math.max(0,y0-pad); y1=Math.min(h-1,y1+pad);
+  x0=Math.max(0,x0-pad); x1=Math.min(w-1,x1+pad);
+  return { x:x0/r, y:y0/r, w:(x1-x0+1)/r, h:(y1-y0+1)/r };
+}
+
+function loadImg(file, tag){
+  const img=new Image();
+  img.onload=()=>{
+    if(tag==='F'){ imgF=img; boxF=detectBox(img); }
+    else { imgB=img; boxB=detectBox(img); }
+    $('box'+(tag==='F'?'F':'B')).classList.add('on');
+    $('box'+(tag==='F'?'F':'B')).innerHTML='已选 '+(tag==='F'?'正面':'反面')+'（'+(file.name||'')+'）<input type="file" id="file'+(tag==='F'?'F':'B')+'" accept="image/*">';
+    bindUpload('box'+(tag==='F'?'F':'B'),'file'+(tag==='F'?'F':'B'),tag);
+    $('gen').disabled = !(imgF&&imgB);
+    drawPrev();
+    if(imgF&&imgB) toast('两张都好了！看看识别框准不准');
+  };
+  img.onerror=()=>toast('图片读取失败，换一张');
+  img.src=URL.createObjectURL(file);
+}
 function bindUpload(boxId, fileId, tag){
-  const box=$(boxId), file=$(fileId);
-  box.addEventListener('click', ()=>file.click());
-  file.addEventListener('change', ()=>{
-    const f=file.files[0]; if(!f) return;
-    const img=new Image();
-    img.onload=()=>{
-      if(tag==='F') imgF=img; else imgB=img;
-      box.classList.add('on');
-      box.innerHTML='已选 '+(tag==='F'?'正面':'反面')+'（'+(f.name||'')+'）<input type="file" id="'+fileId+'" accept="image/*">';
-      bindUpload(boxId,fileId,tag);
-      const th=$('thumbs');
-      th.style.display='flex';
-      th.innerHTML='<img src="'+img.src+'"><img src="'+(tag==='F'?(imgB?imgB.src:''):(imgF?imgF.src:''))+'">';
-      $('gen').disabled = !(imgF&&imgB);
-      if(imgF&&imgB) toast('两张都好了，点生成！');
-    };
-    img.onerror=()=>toast('图片读取失败，换一张');
-    img.src=URL.createObjectURL(f);
-  });
+  $(boxId).addEventListener('click', ()=>$(fileId).click());
+  $(fileId).addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadImg(f,tag); });
 }
 bindUpload('boxF','fileF','F');
 bindUpload('boxB','fileB','B');
 
+function drawPrev(){
+  const cv=$('prev');
+  if(!imgF&&!imgB){ cv.style.display='none'; return; }
+  cv.style.display='block';
+  const W=760, gap=16;
+  const hF=imgF?Math.round(W*imgF.height/imgF.width):0;
+  const hB=imgB?Math.round(W*imgB.height/imgB.width):0;
+  cv.width=W; cv.height=hF+gap+hB;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#eee'; ctx.fillRect(0,0,W,cv.height);
+  let y=0;
+  function half(img, box, y){
+    if(!img) return;
+    const h=Math.round(W*img.height/img.width);
+    ctx.drawImage(img,0,y,W,h);
+    if(box){
+      ctx.strokeStyle='#4caf50'; ctx.lineWidth=3;
+      ctx.strokeRect(box.x*W/img.width, y+box.y*W/img.width, box.w*W/img.width, box.h*W/img.width);
+    }
+    return h;
+  }
+  y+=half(imgF,boxF,y); y+=gap;
+  half(imgB,boxB,y);
+}
+
 $('gen').addEventListener('click', ()=>{
   if(!imgF||!imgB){ toast('先选两张图'); return; }
-  const W=1240, H=1754; // A4 @150dpi
-  const cv=$('cv'); cv.width=W; cv.height=H;
+  if(!boxF||!boxB){ toast('没识别到证件区域，换张背景干净点的扫描图试试'); return; }
+  const PW=1240, PH=1754;
+  const cv=$('cv'); cv.width=PW; cv.height=PH;
   const ctx=cv.getContext('2d');
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
-  const gap=28; // 中间间隙
-  const areaH=(H-gap*2-gap)/2; // 每半页
-  const areaW=W-gap*2;
-  function drawHalf(img, y){
-    const r=Math.min(areaW/img.width, areaH/img.height);
-    const w=img.width*r, h=img.height*r;
-    ctx.drawImage(img, (W-w)/2, y+(areaH-h)/2, w, h);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,PW,PH);
+  const gap=30;
+  const areaH=(PH-gap*3)/2, areaW=PW-gap*2;
+  function drawCrop(img, box, y){
+    const cw=Math.max(1,box.w), ch=Math.max(1,box.h);
+    const r=Math.min(areaW/cw, areaH/ch);
+    const w=cw*r, h=ch*r;
+    ctx.drawImage(img, box.x, box.y, cw, ch, (PW-w)/2, y+(areaH-h)/2, w, h);
   }
-  drawHalf(imgF, gap);
-  drawHalf(imgB, gap*2+areaH);
-  ctx.strokeStyle='#ddd'; ctx.lineWidth=1;
-  ctx.setLineDash([8,8]); ctx.strokeRect(gap-10,gap+areaH-14,areaW+20,2);
-  $('wrap').style.display='block';
+  drawCrop(imgF, boxF, gap);
+  drawCrop(imgB, boxB, gap*2+areaH);
+  cv.style.display='block';
   $('save').style.display='block';
-  toast('拼好了，保存吧！');
+  toast('拼好了！保存去打印吧');
 });
 
 $('save').addEventListener('click', ()=>{
