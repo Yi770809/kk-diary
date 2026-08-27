@@ -117,7 +117,13 @@
     padding:10px 12px 16px; display:none;
   }
   #stickerPanel.show { display:block; }
-  #stickerPanel .sp-title { font-size:.72em; color:#e8c97a; margin-bottom:8px; letter-spacing:.06em; }
+  #stickerPanel .sp-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  #stickerPanel .sp-title { font-size:.72em; color:#e8c97a; letter-spacing:.06em; }
+  #spDone {
+    background:rgba(120,200,150,.18); color:#8fd8ae; border:1px solid rgba(120,200,150,.45);
+    border-radius:18px; padding:.4em 1em; font-size:.78em; cursor:pointer; font-weight:600;
+  }
+  #spDone:active { background:rgba(120,200,150,.3); }
   #stickerPanel .sp-list { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
   #stickerPanel .sp-list::-webkit-scrollbar { display:none; }
   .sp-item {
@@ -228,7 +234,10 @@
 
 <!-- 手账：贴纸面板 -->
 <div id="stickerPanel">
-  <div class="sp-title">点贴纸贴到这一页 · 拖动可摆放 · 选中后可旋转缩放</div>
+  <div class="sp-head">
+    <span class="sp-title">点贴纸贴到这一页 · 拖动摆放 · 选中可旋转缩放</span>
+    <button id="spDone">✓ 完成</button>
+  </div>
   <div class="sp-list" id="spList"></div>
 </div>
 <!-- 手账：贴纸操作条 -->
@@ -437,6 +446,7 @@
   // 进入 / 退出编辑
   const editBtn = document.getElementById('editBtn');
   editBtn.onclick = () => { editing ? exitEdit() : enterEdit(); };
+  document.getElementById('spDone').onclick = () => { if (editing) exitEdit(); };
 
   function enterEdit() {
     const p = pages[current];
