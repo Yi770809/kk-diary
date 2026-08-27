@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>证件照排版 · KK工具</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    background: radial-gradient(ellipse at 50% 0%, #2b3a55 0%, #1a2333 70%, #121826 100%);
+    font-family: "PingFang SC","Microsoft YaHei",sans-serif;
+    color:#dfe7f5; min-height:100vh; padding-bottom:30px;
+  }
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 8px; }
+  header h1 { font-size:1.05em; letter-spacing:.1em; color:#f5ecd7; }
+  header h1 small { display:block; font-size:.58em; color:#8f9dbb; letter-spacing:.08em; margin-top:2px; font-weight:400; }
+  .back { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#dfe7f5; border-radius:18px; padding:.4em .9em; font-size:.78em; cursor:pointer; text-decoration:none; }
+  .card { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:14px; margin:10px 14px; padding:14px; }
+  .card label { font-size:.78em; color:#8f9dbb; display:block; margin-bottom:6px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .row select, .row input[type=number] {
+    background:#1a2333; color:#dfe7f5; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:.55em .8em; font-size:.88em; flex:1; min-width:110px;
+  }
+  .file-box {
+    border:2px dashed rgba(255,255,255,.2); border-radius:12px; padding:24px; text-align:center;
+    color:#8f9dbb; font-size:.82em; cursor:pointer; margin-top:4px;
+  }
+  .file-box.has { border-color:rgba(232,201,122,.5); color:#e8c97a; }
+  .preview-row { display:flex; gap:14px; align-items:center; margin-top:10px; }
+  .preview-row img { width:84px; height:112px; object-fit:contain; background:#fff; border-radius:8px; }
+  .adj { flex:1; }
+  .adj .sl { display:flex; align-items:center; gap:8px; font-size:.72em; color:#8f9dbb; margin:6px 0; }
+  .adj input[type=range] { flex:1; accent-color:#e8c97a; }
+  .adj input[type=number] { width:52px; }
+  .btn-main {
+    display:block; width:calc(100% - 28px); margin:12px 14px; padding:.85em; border:none; border-radius:22px;
+    background:linear-gradient(135deg,#e8c97a,#d4a94e); color:#2a2114; font-size:.98em; font-weight:600; cursor:pointer;
+  }
+  .btn-main:disabled { opacity:.5; }
+  .btn-sec {
+    display:block; width:calc(100% - 28px); margin:6px 14px; padding:.8em; border:none; border-radius:22px;
+    background:rgba(255,255,255,.1); color:#dfe7f5; font-size:.92em; cursor:pointer;
+  }
+  .canvas-wrap { margin:14px; background:#fff; border-radius:10px; padding:8px; display:none; overflow-x:auto; }
+  .canvas-wrap.show { display:block; }
+  .canvas-wrap canvas { width:100%; display:block; }
+  .tip { margin:8px 14px; font-size:.72em; color:#5c6b8c; line-height:1.7; }
+  .toast {
+    position:fixed; left:50%; bottom:40px; transform:translateX(-50%); z-index:40;
+    background:rgba(20,28,44,.96); color:#f5ecd7; border:1px solid rgba(232,201,122,.4);
+    border-radius:20px; padding:.55em 1.3em; font-size:.8em; display:none; white-space:nowrap;
+  }
+  .toast.show { display:block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>证件照排版<small>PHOTO LAYOUT · 上传照片自动排满一张纸</small></h1>
+  <a class="back" href="index.html">‹ 回日记本</a>
+</header>
+
+<div class="card">
+  <label>证件照尺寸</label>
+  <div class="row">
+    <select id="sizeSel">
+      <option value="25,35">一寸 25×35mm</option>
+      <option value="35,49">二寸 35×49mm</option>
+      <option value="22,32">小一寸 22×32mm</option>
+      <option value="33,48">大一寸 33×48mm</option>
+      <option value="33,48,300">护照 33×48mm</option>
+      <option value="26,32">驾驶证 26×32mm</option>
+      <option value="25,35,300">自定义</option>
+    </select>
+  </div>
+  <div class="row" style="margin-top:8px;" id="customRow" hidden>
+    <input type="number" id="cw" placeholder="宽mm" min="10" max="100"> <span style="color:#8f9dbb;line-height:2;">×</span>
+    <input type="number" id="ch" placeholder="高mm" min="10" max="100">
+  </div>
+</div>
+
+<div class="card">
+  <label>打印纸张</label>
+  <div class="row">
+    <select id="paperSel">
+      <option value="210,297">A4 纸 210×297mm</option>
+      <option value="102,152">6寸相纸 102×152mm</option>
+      <option value="127,178">5寸相纸 127×178mm</option>
+      <option value="89,127">3寸相纸 89×127mm</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <label>上传证件照（正面、五官清晰）</label>
+  <div class="file-box" id="fileBox">点这里选照片（JPG / PNG）</div>
+  <input type="file" id="fileInput" accept="image/*" style="display:none">
+  <div class="preview-row" id="previewRow" hidden>
+    <img id="preview" alt="preview">
+    <div class="adj">
+      <div class="sl">缩放 <input type="range" id="zoom" min="80" max="260" value="150"><span id="zoomV">150%</span></div>
+      <div class="sl">上移 <input type="range" id="offY" min="-60" max="60" value="0"><span id="offYV">0</span></div>
+      <div class="sl">左移 <input type="range" id="offX" min="-60" max="60" value="0"><span id="offXV">0</span></div>
+    </div>
+  </div>
+</div>
+
+<button class="btn-main" id="btnGo" disabled>生成排版图</button>
+<button class="btn-sec" id="btnDl" hidden>保存图片（PNG）</button>
+<button class="btn-sec" id="btnPrint" hidden>打印</button>
+
+<div class="canvas-wrap" id="canvasWrap"><canvas id="cv"></canvas></div>
+<div class="tip">用法：选好尺寸和纸张 → 上传照片 → 拖动滑块把人脸调到合适位置和大小 → 生成排版 → 保存图片或直接打印。<br>建议打印时选"无边距/实际大小"，照片之间留了裁切间隙。</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  let img = null, imgData = null;
+
+  const fileInput = document.getElementById('fileInput');
+  const fileBox = document.getElementById('fileBox');
+  fileBox.onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { toast('图片太大，请选10MB以内'); return; }
+    const url = URL.createObjectURL(f);
+    const im = new Image();
+    im.onload = () => {
+      img = im; imgData = { w: im.naturalWidth, h: im.naturalHeight };
+      document.getElementById('preview').src = url;
+      document.getElementById('previewRow').hidden = false;
+      fileBox.textContent = f.name; fileBox.classList.add('has');
+      document.getElementById('btnGo').disabled = false;
+      document.getElementById('btnDl').hidden = true;
+      document.getElementById('btnPrint').hidden = true;
+      document.getElementById('canvasWrap').classList.remove('show');
+    };
+    im.src = url;
+  };
+
+  document.getElementById('sizeSel').onchange = e => {
+    document.getElementById('customRow').hidden = e.target.value !== '25,35,300';
+  };
+
+  function getSize() {
+    const v = document.getElementById('sizeSel').value;
+    if (v === '25,35,300') {
+      const w = parseFloat(document.getElementById('cw').value) || 25;
+      const h = parseFloat(document.getElementById('ch').value) || 35;
+      return [w, h];
+    }
+    return v.split(',').slice(0,2).map(parseFloat);
+  }
+  function getPaper() {
+    return document.getElementById('paperSel').value.split(',').map(parseFloat);
+  }
+
+  // 画一张证件照（含白边？证件照一般不留边，直接满幅）
+  function drawOne(x, y, wmm, hmm, scale) {
+    if (!img) return;
+    const zoom = parseInt(document.getElementById('zoom').value) / 100;
+    const ox = parseInt(document.getElementById('offX').value);
+    const oy = parseInt(document.getElementById('offY').value);
+    // 源图取景：等比放大 zoom 倍，偏移
+    const iw = imgData.w, ih = imgData.h;
+    const targetRatio = wmm / hmm;
+    // 先cover居中裁剪到目标比例
+    let sw, sh, sx, sy;
+    if (iw / ih > targetRatio) { sh = ih; sw = ih * targetRatio; }
+    else { sw = iw; sh = iw / targetRatio; }
+    sx = (iw - sw) / 2; sy = (ih - sh) / 2;
+    // 缩放
+    sw /= zoom; sh /= zoom;
+    // 偏移（百分比：ox范围-60~60 → 源图偏移）
+    sx += sw * ox / 100; sy += sh * oy / 100;
+    // 限制边界
+    sx = Math.max(0, Math.min(iw - sw, sx));
+    sy = Math.max(0, Math.min(ih - sh, sy));
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, wmm * scale, hmm * scale);
+  }
+
+  function layout() {
+    const [wmm, hmm] = getSize();
+    const [pW, pH] = getPaper();
+    const DPI = 300, mm2px = DPI / 25.4;
+    // 纸张留边距（mm）
+    const margin = 5;
+    const gap = 2.5; // 裁切间隙
+    const cellW = wmm + gap, cellH = hmm + gap;
+    const cols = Math.floor((pW - margin * 2 + gap) / cellW);
+    const rows = Math.floor((pH - margin * 2 + gap) / cellH);
+    cv.width = Math.round(pW * mm2px);
+    cv.height = Math.round(pH * mm2px);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    // 浅灰定位线（打印不显示的辅助网格可去掉，这里直接画淡色便于对齐裁剪）
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = (margin + c * cellW) * mm2px;
+        const y = (margin + r * cellH) * mm2px;
+        drawOne(x, y, wmm, hmm, mm2px);
+      }
+    }
+    document.getElementById('canvasWrap').classList.add('show');
+    document.getElementById('btnDl').hidden = false;
+    document.getElementById('btnPrint').hidden = false;
+    return rows * cols;
+  }
+
+  document.getElementById('btnGo').onclick = () => {
+    const n = layout();
+    toast('生成成功：一张纸可排 ' + n + ' 张，可保存或打印');
+  };
+  document.getElementById('btnDl').onclick = () => {
+    const a = document.createElement('a');
+    a.download = '证件照排版.png';
+    a.href = cv.toDataURL('image/png');
+    a.click();
+    toast('已保存，去相册/文件夹打印吧');
+  };
+  document.getElementById('btnPrint').onclick = () => {
+    // 打印：把canvas放到新窗口
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>证件照排版</title><style>body{margin:0}img{width:100%}</style></head><body><img src="' + cv.toDataURL('image/png') + '"></body></html>');
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 500);
+  };
+
+  // 滑块联动
+  ['zoom','offX','offY'].forEach(id => {
+    const el = document.getElementById(id);
+    el.oninput = () => {
+      document.getElementById(id + 'V').textContent = id === 'zoom' ? el.value + '%' : el.value;
+      document.getElementById('preview').src = document.getElementById('preview').src; // 保持
+    };
+  });
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+</script>
+</body>
+</html>
