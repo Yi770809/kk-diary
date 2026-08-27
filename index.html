@@ -102,8 +102,49 @@
   .sticker-grid img { width:72%; aspect-ratio:1; object-fit:contain; }
   .sticker-grid span { font-size:.58em; color:#8a7660; margin-top:2px; }
   .sticker-note { margin-top:.8em; font-size:.72em; color:#8a7660; text-align:center; }
+  /* ===== 手账模式 ===== */
+  .stick-layer { position:absolute; inset:0; pointer-events:none; z-index:5; border-radius:inherit; }
+  .stick-item { position:absolute; pointer-events:none; touch-action:none; }
+  .page.editing .stick-item { pointer-events:auto; cursor:grab; }
+  .stick-item img { width:100%; display:block; pointer-events:none; -webkit-user-drag:none; user-select:none; }
+  .stick-item.sel { outline:2px dashed rgba(212,169,78,.9); outline-offset:2px; border-radius:4px; }
+  .page.editing .p-title, .page.editing .p-body {
+    outline:1px dashed rgba(140,110,60,.5); outline-offset:3px; border-radius:4px; cursor:text;
+  }
+  #stickerPanel {
+    position:fixed; left:0; right:0; bottom:0; z-index:25;
+    background:rgba(20,28,44,.97); border-top:1px solid rgba(232,201,122,.35);
+    padding:10px 12px 16px; display:none;
+  }
+  #stickerPanel.show { display:block; }
+  #stickerPanel .sp-title { font-size:.72em; color:#e8c97a; margin-bottom:8px; letter-spacing:.06em; }
+  #stickerPanel .sp-list { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+  #stickerPanel .sp-list::-webkit-scrollbar { display:none; }
+  .sp-item {
+    flex-shrink:0; width:54px; height:54px; background:rgba(255,255,255,.07);
+    border-radius:10px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; border:1px solid transparent;
+  }
+  .sp-item:active { border-color:rgba(232,201,122,.6); }
+  .sp-item img { max-width:86%; max-height:86%; object-fit:contain; }
+  #stickBar {
+    position:fixed; left:50%; bottom:112px; transform:translateX(-50%); z-index:26;
+    background:rgba(20,28,44,.97); border:1px solid rgba(232,201,122,.4); border-radius:24px;
+    display:none; align-items:center; padding:4px 8px;
+  }
+  #stickBar.show { display:flex; }
+  #stickBar button { background:none; border:none; color:#f5ecd7; font-size:1.05em; padding:.35em .55em; cursor:pointer; }
+  #stickBar button:active { color:#e8c97a; }
+  #stickBar .sep { width:1px; height:18px; background:rgba(255,255,255,.15); margin:0 2px; }
+  .toast {
+    position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:40;
+    background:rgba(20,28,44,.96); color:#f5ecd7; border:1px solid rgba(232,201,122,.4);
+    border-radius:20px; padding:.55em 1.3em; font-size:.8em; display:none; white-space:nowrap;
+  }
+  .toast.show { display:block; }
   /* 底部控制 */
   .ctrl { margin-top:14px; width:min(94vw,430px); display:flex; align-items:center; justify-content:space-between; color:#9fb0d0; font-size:.85em; }
+  .ctrl .left { display:flex; gap:8px; }
   .ctrl button {
     background:rgba(255,255,255,.08); color:#dfe7f5; border:1px solid rgba(255,255,255,.15);
     border-radius:20px; padding:.45em 1.1em; font-size:.85em; cursor:pointer;
@@ -176,11 +217,31 @@
   </div>
 </div>
 <div class="ctrl">
-  <a class="ctrl-btn" href="stickers.html">🎀 素材库</a>
+  <div class="left">
+    <a class="ctrl-btn" href="stickers.html">🎀 素材库</a>
+    <button class="ctrl-btn" id="editBtn">✎ 手账</button>
+  </div>
   <span class="pos" id="pos">1 / 6</span>
   <button onclick="nextPage()">下一页 ›</button>
 </div>
 <div class="tip">点书页左/右半边也能翻页 · 单页翻书模式</div>
+
+<!-- 手账：贴纸面板 -->
+<div id="stickerPanel">
+  <div class="sp-title">点贴纸贴到这一页 · 拖动可摆放 · 选中后可旋转缩放</div>
+  <div class="sp-list" id="spList"></div>
+</div>
+<!-- 手账：贴纸操作条 -->
+<div id="stickBar">
+  <button id="sbDel" title="删除">🗑</button>
+  <span class="sep"></span>
+  <button id="sbRotL" title="左转">↺</button>
+  <button id="sbRotR" title="右转">↻</button>
+  <span class="sep"></span>
+  <button id="sbMinus" title="变小">－</button>
+  <button id="sbPlus" title="变大">＋</button>
+</div>
+<div class="toast" id="toast"></div>
 
 <script>
   const STICKERS = [
@@ -222,6 +283,7 @@
   // 左右点击区翻页
   const book = document.getElementById('book');
   book.addEventListener('click', function(e) {
+    if (editing) return; // 手账编辑中不翻页
     if (e.target.closest('.toc-item')) return; // 目录跳转优先，不触发翻页
     const r = book.getBoundingClientRect();
     const x = e.clientX - r.left;
@@ -233,12 +295,241 @@
   book.addEventListener('touchstart', function(e){ sx = e.touches[0].clientX; }, {passive:true});
   book.addEventListener('touchend', function(e){
     if (sx === null) return;
+    if (editing) { sx = null; return; } // 手账编辑中不翻页
     const dx = e.changedTouches[0].clientX - sx;
     if (Math.abs(dx) > 40) { dx < 0 ? nextPage() : prevPage(); }
     sx = null;
   }, {passive:true});
 
+  /* ============ 手账模式 ============ */
+  const EDITABLE = { '2': true, '4': true };
+  let editing = false;
+  let selSticker = null;
+  let diaryData = { pages: {} };
+
+  // 给可编辑页加贴纸层
+  pages.forEach(p => {
+    if (EDITABLE[p.dataset.page]) {
+      const layer = document.createElement('div');
+      layer.className = 'stick-layer';
+      p.appendChild(layer);
+    }
+  });
+  function stickLayer(pageEl) { return pageEl.querySelector('.stick-layer'); }
+
+  // 加载云端手账数据
+  async function loadDiary() {
+    try {
+      const r = await fetch('/.netlify/functions/diary');
+      diaryData = await r.json();
+    } catch (e) { diaryData = { pages: {} }; }
+    renderDiary();
+  }
+
+  function renderDiary() {
+    const data = diaryData.pages || {};
+    pages.forEach(p => {
+      const d = data[p.dataset.page];
+      if (!d) return;
+      const t = p.querySelector('.p-title');
+      const b = p.querySelector('.p-body');
+      if (t && d.title) t.innerHTML = d.title;
+      if (b && d.body) b.innerHTML = d.body;
+      const layer = stickLayer(p);
+      if (!layer) return;
+      layer.innerHTML = '';
+      (d.stickers || []).forEach(s => addStickerEl(layer, s.src, s.x, s.y, s.w, s.rot));
+    });
+  }
+
+  function addStickerEl(layer, src, x, y, w, rot) {
+    const el = document.createElement('div');
+    el.className = 'stick-item';
+    el.style.left = (x != null ? x : 40) + '%';
+    el.style.top = (y != null ? y : 10) + '%';
+    el.style.width = (w != null ? w : 20) + '%';
+    el.style.transform = 'rotate(' + (rot != null ? rot : 0) + 'deg)';
+    const img = document.createElement('img');
+    img.src = src; img.draggable = false;
+    el.appendChild(img);
+    layer.appendChild(el);
+    makeDraggable(el);
+    return el;
+  }
+
+  function addSticker(src) {
+    const p = pages[current];
+    if (!p || !EDITABLE[p.dataset.page]) return;
+    const layer = stickLayer(p);
+    const el = addStickerEl(layer, src,
+      35 + Math.random() * 25, 10 + Math.random() * 10,
+      18 + Math.random() * 6, Math.round(Math.random() * 16 - 8));
+    selectSticker(el);
+  }
+
+  function selectSticker(el) {
+    if (selSticker) selSticker.classList.remove('sel');
+    selSticker = el;
+    if (el) {
+      el.classList.add('sel');
+      document.getElementById('stickBar').classList.add('show');
+    } else {
+      document.getElementById('stickBar').classList.remove('show');
+    }
+  }
+
+  function makeDraggable(el) {
+    el.addEventListener('pointerdown', function (ev) {
+      if (!editing) return;
+      ev.preventDefault(); ev.stopPropagation();
+      selectSticker(el);
+      const startX = ev.clientX, startY = ev.clientY;
+      const layer = el.parentElement;
+      const lr = layer.getBoundingClientRect();
+      const origLeft = parseFloat(el.style.left) || 0;
+      const origTop = parseFloat(el.style.top) || 0;
+      const move = function (e2) {
+        const dx = (e2.clientX - startX) / lr.width * 100;
+        const dy = (e2.clientY - startY) / lr.height * 100;
+        el.style.left = Math.min(88, Math.max(-8, origLeft + dx)) + '%';
+        el.style.top = Math.min(86, Math.max(-8, origTop + dy)) + '%';
+      };
+      const up = function () {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+  }
+
+  // 贴纸面板：静态 13 张 + 云端素材
+  const spList = document.getElementById('spList');
+  async function renderPanel() {
+    spList.innerHTML = '';
+    STICKERS.forEach(n => {
+      const it = document.createElement('div');
+      it.className = 'sp-item';
+      const img = document.createElement('img');
+      img.src = 'stickers/' + n + '.png'; img.loading = 'lazy';
+      it.appendChild(img);
+      it.onclick = () => addSticker('stickers/' + n + '.png');
+      spList.appendChild(it);
+    });
+    try {
+      const r = await fetch('/.netlify/functions/list');
+      const items = await r.json();
+      items.forEach(it => {
+        const d = document.createElement('div');
+        d.className = 'sp-item';
+        const img = document.createElement('img');
+        img.src = '/.netlify/functions/serve?key=' + encodeURIComponent(it.key);
+        img.loading = 'lazy';
+        d.appendChild(img);
+        d.title = it.title || it.name || '';
+        d.onclick = () => addSticker(img.src);
+        spList.appendChild(d);
+      });
+    } catch (e) { /* 云端素材加载失败不影响静态贴纸 */ }
+  }
+
+  // 进入 / 退出编辑
+  const editBtn = document.getElementById('editBtn');
+  editBtn.onclick = () => { editing ? exitEdit() : enterEdit(); };
+
+  function enterEdit() {
+    const p = pages[current];
+    if (!p || !EDITABLE[p.dataset.page]) {
+      toast('这一页不能装饰，翻到正文页（第3页开篇 / 第5页空白页）再试');
+      return;
+    }
+    editing = true;
+    p.classList.add('editing');
+    const t = p.querySelector('.p-title');
+    const b = p.querySelector('.p-body');
+    if (t) t.setAttribute('contenteditable', 'true');
+    if (b) b.setAttribute('contenteditable', 'true');
+    document.getElementById('stickerPanel').classList.add('show');
+    editBtn.textContent = '✓ 完成';
+    editBtn.style.background = 'rgba(120,200,150,.15)';
+    editBtn.style.color = '#8fd8ae';
+    editBtn.style.borderColor = 'rgba(120,200,150,.4)';
+  }
+
+  async function exitEdit() {
+    const p = pages[current];
+    if (p && EDITABLE[p.dataset.page]) {
+      const data = {
+        title: p.querySelector('.p-title').innerHTML,
+        body: p.querySelector('.p-body').innerHTML,
+        stickers: [...stickLayer(p).querySelectorAll('.stick-item')].map(el => ({
+          src: el.querySelector('img').src,
+          x: Math.round((parseFloat(el.style.left) || 0) * 10) / 10,
+          y: Math.round((parseFloat(el.style.top) || 0) * 10) / 10,
+          w: Math.round((parseFloat(el.style.width) || 20) * 10) / 10,
+          rot: Math.round(parseFloat((el.style.transform.match(/-?[\d.]+/) || [0])[0]) * 10) / 10,
+        })),
+      };
+      diaryData.pages[p.dataset.page] = data;
+      try {
+        const r = await fetch('/.netlify/functions/diary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(diaryData),
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || '保存失败');
+        toast('已保存到云端');
+      } catch (e) {
+        toast('保存失败：' + (e.message || e));
+      }
+    }
+    editing = false;
+    if (p) {
+      p.classList.remove('editing');
+      const t = p.querySelector('.p-title');
+      const b = p.querySelector('.p-body');
+      if (t) t.removeAttribute('contenteditable');
+      if (b) b.removeAttribute('contenteditable');
+    }
+    document.getElementById('stickerPanel').classList.remove('show');
+    selectSticker(null);
+    editBtn.textContent = '✎ 手账';
+    editBtn.style.background = '';
+    editBtn.style.color = '';
+    editBtn.style.borderColor = '';
+  }
+
+  // 贴纸操作条
+  document.getElementById('sbDel').onclick = () => { if (selSticker) { selSticker.remove(); selectSticker(null); } };
+  document.getElementById('sbRotL').onclick = () => rotateSticker(-15);
+  document.getElementById('sbRotR').onclick = () => rotateSticker(15);
+  document.getElementById('sbMinus').onclick = () => scaleSticker(-3);
+  document.getElementById('sbPlus').onclick = () => scaleSticker(3);
+  function rotateSticker(d) {
+    if (!selSticker) return;
+    const m = selSticker.style.transform.match(/-?[\d.]+/);
+    const cur = m ? parseFloat(m[0]) : 0;
+    selSticker.style.transform = 'rotate(' + Math.round((cur + d) * 10) / 10 + 'deg)';
+  }
+  function scaleSticker(d) {
+    if (!selSticker) return;
+    const cur = parseFloat(selSticker.style.width) || 20;
+    selSticker.style.width = Math.min(60, Math.max(8, Math.round((cur + d) * 10) / 10)) + '%';
+  }
+
+  // 轻提示
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
   render();
+  loadDiary();
+  renderPanel();
 </script>
 </body>
 </html>
