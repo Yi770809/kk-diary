@@ -8,7 +8,7 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === 'GET') {
       const blob = await store.get(KEY);
-      const body = blob ? await blob.text() : '{"pages":{}}';
+      const body = blob ? Buffer.from(blob).toString('utf-8') : '{"pages":{}}';
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' },
