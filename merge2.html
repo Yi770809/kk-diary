@@ -17,40 +17,64 @@ h1 { font-size:20px; margin-bottom:4px; }
 .btn { display:block; width:100%; padding:14px; border:none; border-radius:10px; font-size:16px; font-weight:600; color:#fff; background:#7fb069; margin-top:4px; cursor:pointer; }
 .btn:disabled { background:#c8c2b4; }
 .btn.sec { background:#b08d57; margin-top:10px; }
+.btn.gray { background:#9a9286; }
 .canvas-wrap { text-align:center; }
 canvas { max-width:100%; border-radius:8px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.12); }
 .steps { font-size:13px; line-height:1.9; color:#5a554c; }
 .steps b { color:#7fb069; }
 .toast { position:fixed; left:50%; bottom:90px; transform:translateX(-50%); background:#3d3a34; color:#fff; padding:9px 18px; border-radius:20px; font-size:13px; opacity:0; transition:opacity .3s; pointer-events:none; z-index:9; }
 .toast.show { opacity:.92; }
+.cropbar { display:flex; gap:10px; margin-top:12px; }
+.cropbar .btn { flex:1; margin-top:0; }
+#cropView { display:none; }
+#cropCanvas { width:100%; touch-action:none; }
 </style>
 </head>
 <body>
 <h1>证件正反同面 · 拼版</h1>
-<div class="sub">自动从 A4 扫描图里裁出证件 → 正反拼到同一张 A4</div>
+<div class="sub">手动裁剪扫描图里的证件 → 正反拼到同一张 A4</div>
 
-<div class="card">
-  <h2>1. 选扫描图（正面 / 反面）</h2>
-  <div class="upload" id="boxF">点这里选 <b>正面</b> 扫描图<input type="file" id="fileF" accept="image/*"></div>
-  <div class="upload" id="boxB" style="margin-top:8px;">点这里选 <b>反面</b> 扫描图<input type="file" id="fileB" accept="image/*"></div>
-  <div class="hint" style="margin-top:8px;">扫描设置里的<b>原稿尺寸</b>建议选<b>自动</b>（只扫证件区域）；如果还是整张A4也没事，这里会自动裁剪。</div>
-</div>
-
-<div class="card">
-  <h2>2. 自动裁剪预览</h2>
-  <div class="canvas-wrap">
-    <canvas id="prev"></canvas>
+<!-- 主界面 -->
+<div id="mainView">
+  <div class="card">
+    <h2>1. 选扫描图（正面 / 反面）</h2>
+    <div class="upload" id="boxF">点这里选 <b>正面</b> 扫描图<input type="file" id="fileF" accept="image/*"></div>
+    <div class="upload" id="boxB" style="margin-top:8px;">点这里选 <b>反面</b> 扫描图<input type="file" id="fileB" accept="image/*"></div>
+    <button class="btn gray" id="cropF" disabled style="margin-top:10px;">调整正面裁剪</button>
+    <button class="btn gray" id="cropB" disabled>调整反面裁剪</button>
   </div>
-  <div class="hint">绿框 = 自动识别出的证件区域。识别不准就告诉我，我加手动调整。</div>
-  <button class="btn" id="gen" disabled style="margin-top:10px;">按识别框裁剪并拼版</button>
-  <canvas id="cv" style="display:none;margin-top:12px;"></canvas>
-  <button class="btn sec" id="save" style="display:none;">保存拼好的图到相册</button>
+
+  <div class="card">
+    <h2>2. 生成拼版图</h2>
+    <div class="canvas-wrap">
+      <canvas id="prev"></canvas>
+    </div>
+    <div class="hint" style="margin-top:6px;">绿框 = 自动识别结果，可点上方按钮手动调整。</div>
+    <button class="btn" id="gen" disabled style="margin-top:10px;">按裁剪框拼版</button>
+    <canvas id="cv" style="display:none;margin-top:12px;"></canvas>
+    <button class="btn sec" id="save" style="display:none;">保存拼好的图到相册</button>
+  </div>
+
+  <div class="card">
+    <h2>打印</h2>
+    <div class="steps">
+      相册打开保存的图 → <b>Canon PRINT 照片打印</b> → 纸张 <b>A4</b>、<b>无边框关</b>。
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <h2>打印</h2>
-  <div class="steps">
-    相册打开保存的图 → <b>Canon PRINT 照片打印</b> → 纸张 <b>A4</b>、<b>无边框关</b>。
+<!-- 裁剪界面 -->
+<div id="cropView">
+  <div class="card">
+    <h2 id="cropTitle">调整裁剪</h2>
+    <div class="canvas-wrap">
+      <canvas id="cropCanvas"></canvas>
+    </div>
+    <div class="hint" style="margin-top:6px;">拖动<b>绿框内部</b>移动位置，拖<b>右下角圆圈</b>调整大小。</div>
+    <div class="cropbar">
+      <button class="btn gray" id="cropCancel">取消</button>
+      <button class="btn" id="cropOk">确认裁剪</button>
+    </div>
   </div>
 </div>
 
@@ -59,10 +83,10 @@ canvas { max-width:100%; border-radius:8px; background:#fff; box-shadow:0 2px 8p
 <script>
 const $ = id => document.getElementById(id);
 let imgF=null, imgB=null;
-let boxF=null, boxB=null; // 识别框 {x,y,w,h} 相对原图
+let boxF=null, boxB=null;
 function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),2600); }
 
-// 投影法自动检测非背景区域（背景=浅色均匀）
+// 自动检测（作初始框）
 function detectBox(img){
   const S=900;
   const r=S/img.width, w=S, h=Math.round(img.height*r);
@@ -71,22 +95,17 @@ function detectBox(img){
   ctx.drawImage(img,0,0,w,h);
   const d=ctx.getImageData(0,0,w,h).data;
   const rowH=new Array(h).fill(0), colW=new Array(w).fill(0);
-  for(let y=0;y<h;y++){
-    for(let x=0;x<w;x++){
-      const i=(y*w+x)*4, R=d[i], G=d[i+1], B=d[i+2];
-      const mx=Math.max(R,G,B), mn=Math.min(R,G,B);
-      // 非纯白/浅灰背景：有颜色 或 明显偏暗
-      if(mx-mn>28 || mx<215){
-        rowH[y]++; colW[x]++;
-      }
-    }
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i=(y*w+x)*4, R=d[i], G=d[i+1], B=d[i+2];
+    const mx=Math.max(R,G,B), mn=Math.min(R,G,B);
+    if(mx-mn>28 || mx<215){ rowH[y]++; colW[x]++; }
   }
   const thr=Math.max(4, w*0.012);
   let y0=-1,y1=-1;
   for(let y=0;y<h;y++){ if(rowH[y]>=thr){ if(y0<0)y0=y; y1=y; } }
   let x0=-1,x1=-1;
   for(let x=0;x<w;x++){ if(colW[x]>=thr){ if(x0<0)x0=x; x1=x; } }
-  if(y0<0||x0<0) return null;
+  if(y0<0||x0<0) return {x:0,y:0,w:img.width,h:img.height};
   const pad=Math.round(Math.min(w,h)*0.012);
   y0=Math.max(0,y0-pad); y1=Math.min(h-1,y1+pad);
   x0=Math.max(0,x0-pad); x1=Math.min(w-1,x1+pad);
@@ -98,12 +117,15 @@ function loadImg(file, tag){
   img.onload=()=>{
     if(tag==='F'){ imgF=img; boxF=detectBox(img); }
     else { imgB=img; boxB=detectBox(img); }
-    $('box'+(tag==='F'?'F':'B')).classList.add('on');
-    $('box'+(tag==='F'?'F':'B')).innerHTML='已选 '+(tag==='F'?'正面':'反面')+'（'+(file.name||'')+'）<input type="file" id="file'+(tag==='F'?'F':'B')+'" accept="image/*">';
-    bindUpload('box'+(tag==='F'?'F':'B'),'file'+(tag==='F'?'F':'B'),tag);
+    const boxId='box'+(tag==='F'?'F':'B');
+    $(boxId).classList.add('on');
+    $(boxId).innerHTML='已选 '+(tag==='F'?'正面':'反面')+'（'+(file.name||'')+'）<input type="file" id="file'+(tag==='F'?'F':'B')+'" accept="image/*">';
+    bindUpload(boxId,'file'+(tag==='F'?'F':'B'),tag);
     $('gen').disabled = !(imgF&&imgB);
+    $('cropF').disabled = !imgF;
+    $('cropB').disabled = !imgB;
     drawPrev();
-    if(imgF&&imgB) toast('两张都好了！看看识别框准不准');
+    if(imgF&&imgB) toast('两张都好了！');
   };
   img.onerror=()=>toast('图片读取失败，换一张');
   img.src=URL.createObjectURL(file);
@@ -127,7 +149,7 @@ function drawPrev(){
   ctx.fillStyle='#eee'; ctx.fillRect(0,0,W,cv.height);
   let y=0;
   function half(img, box, y){
-    if(!img) return;
+    if(!img) return 0;
     const h=Math.round(W*img.height/img.width);
     ctx.drawImage(img,0,y,W,h);
     if(box){
@@ -140,23 +162,114 @@ function drawPrev(){
   half(imgB,boxB,y);
 }
 
+// ===== 手动裁剪 =====
+let editing=null; // {img, box, tag}
+let drag=null;
+
+function openCrop(tag){
+  const img = tag==='F'?imgF:imgB;
+  if(!img) return;
+  editing={ img, box:Object.assign({}, tag==='F'?boxF:boxB), tag };
+  $('cropTitle').textContent='调整'+(tag==='F'?'正面':'反面')+'裁剪';
+  $('mainView').style.display='none';
+  $('cropView').style.display='block';
+  drawCrop();
+}
+$('cropF').addEventListener('click', ()=>openCrop('F'));
+$('cropB').addEventListener('click', ()=>openCrop('B'));
+$('cropCancel').addEventListener('click', ()=>{ editing=null; $('cropView').style.display='none'; $('mainView').style.display='block'; });
+$('cropOk').addEventListener('click', ()=>{
+  if(editing.tag==='F') boxF=Object.assign({},editing.box);
+  else boxB=Object.assign({},editing.box);
+  editing=null;
+  $('cropView').style.display='none';
+  $('mainView').style.display='block';
+  drawPrev();
+  toast('裁剪已更新');
+});
+
+function drawCrop(){
+  const cv=$('cropCanvas'), img=editing.img;
+  const W=cv.clientWidth||640;
+  const H=Math.round(W*img.height/img.width);
+  cv.width=W*2; cv.height=H*2; // 2x 清晰度
+  const ctx=cv.getContext('2d');
+  const s=2;
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W*s,H*s);
+  ctx.drawImage(img,0,0,W*s,H*s);
+  const b=editing.box, sx=b.x*W*s/img.width, sy=b.y*W*s/img.height, sw=b.w*W*s/img.width, sh=b.h*W*s/img.height;
+  ctx.fillStyle='rgba(0,0,0,0.45)';
+  ctx.fillRect(0,0,W*s,sy);                       // 上
+  ctx.fillRect(0,sy+sh,W*s,H*s-sy-sh);            // 下
+  ctx.fillRect(0,sy,sx,sh);                       // 左
+  ctx.fillRect(sx+sw,sy,W*s-sx-sw,sh);            // 右
+  ctx.strokeStyle='#4caf50'; ctx.lineWidth=3;
+  ctx.strokeRect(sx,sy,sw,sh);
+  // 右下角手柄
+  ctx.fillStyle='#4caf50';
+  ctx.beginPath(); ctx.arc(sx+sw,sy+sh,14,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(sx+sw,sy+sh,14,0,Math.PI*2); ctx.stroke();
+}
+
+const cc=$('cropCanvas');
+function evPos(e){
+  const r=cc.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return { x:(t.clientX-r.left)*cc.width/r.width, y:(t.clientY-r.top)*cc.height/r.height };
+}
+cc.addEventListener('pointerdown', e=>{
+  if(!editing) return;
+  e.preventDefault();
+  const p=evPos(e), b=editing.box;
+  const s=cc.width/cc.clientWidth, img=editing.img;
+  const sx=b.x*s*cc.width/img.width, sy=b.y*s*cc.height/img.height, sw=b.w*s*cc.width/img.width, sh=b.h*s*cc.height/img.height;
+  const inHandle = p.x>=sx+sw-30 && p.y>=sy+sh-30;
+  const inBox = p.x>=sx && p.x<=sx+sw && p.y>=sy && p.y<=sy+sh;
+  if(inHandle) drag={mode:'resize', sx:p.x, sy:p.y, b0:Object.assign({},b), px:p.x-sx-sw, py:p.y-sy-sh};
+  else if(inBox) drag={mode:'move', sx:p.x, sy:p.y, b0:Object.assign({},b)};
+  if(drag) cc.setPointerCapture(e.pointerId);
+});
+cc.addEventListener('pointermove', e=>{
+  if(!drag||!editing) return;
+  e.preventDefault();
+  const p=evPos(e), b0=drag.b0, img=editing.img;
+  const s=cc.width/cc.clientWidth;
+  const dx=(p.x-drag.sx)/s*img.width/cc.width;
+  const dy=(p.y-drag.sy)/s*img.height/cc.height;
+  if(drag.mode==='move'){
+    editing.box.x=Math.max(0,Math.min(img.width-b0.w,b0.x+dx));
+    editing.box.y=Math.max(0,Math.min(img.height-b0.h,b0.y+dy));
+  } else {
+    let w=b0.w+dx, h=b0.h+dy;
+    if(w<20) w=20; if(h<20) h=20;
+    if(b0.x+w>img.width) w=img.width-b0.x;
+    if(b0.y+h>img.height) h=img.height-b0.y;
+    editing.box.w=w; editing.box.h=h;
+  }
+  drawCrop();
+});
+cc.addEventListener('pointerup', ()=>{ drag=null; });
+cc.addEventListener('pointercancel', ()=>{ drag=null; });
+window.addEventListener('resize', ()=>{ if(editing) drawCrop(); });
+
+// 生成拼版
 $('gen').addEventListener('click', ()=>{
   if(!imgF||!imgB){ toast('先选两张图'); return; }
-  if(!boxF||!boxB){ toast('没识别到证件区域，换张背景干净点的扫描图试试'); return; }
   const PW=1240, PH=1754;
   const cv=$('cv'); cv.width=PW; cv.height=PH;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,PW,PH);
   const gap=30;
   const areaH=(PH-gap*3)/2, areaW=PW-gap*2;
-  function drawCrop(img, box, y){
+  function drawCropImg(img, box, y){
     const cw=Math.max(1,box.w), ch=Math.max(1,box.h);
     const r=Math.min(areaW/cw, areaH/ch);
     const w=cw*r, h=ch*r;
     ctx.drawImage(img, box.x, box.y, cw, ch, (PW-w)/2, y+(areaH-h)/2, w, h);
   }
-  drawCrop(imgF, boxF, gap);
-  drawCrop(imgB, boxB, gap*2+areaH);
+  drawCropImg(imgF, boxF, gap);
+  drawCropImg(imgB, boxB, gap*2+areaH);
   cv.style.display='block';
   $('save').style.display='block';
   toast('拼好了！保存去打印吧');
