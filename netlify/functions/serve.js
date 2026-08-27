@@ -21,11 +21,12 @@ exports.handler = async (event) => {
     };
     return {
       statusCode: 200,
+      isBase64Encoded: true,
       headers: {
         'Content-Type': types[ext] || 'application/octet-stream',
         'Cache-Control': 'public, max-age=3600',
       },
-      body: Buffer.from(blob),
+      body: Buffer.from(blob).toString('base64'),
     };
   } catch (err) {
     return { statusCode: 500, body: String((err && err.message) || err) };
