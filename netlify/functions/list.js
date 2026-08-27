@@ -12,7 +12,7 @@ exports.handler = async () => {
       let title = '';
       try {
         const meta = await store.getMetadata(entry.key);
-        title = (meta && meta.title) || '';
+        title = ((meta && meta.metadata) ? meta.metadata.title : '') || '';
       } catch (e) { /* ignore */ }
       items.push({
         key: entry.key,
