@@ -5,7 +5,8 @@ exports.handler = async () => {
   try {
     const store = getStore('kk-stickers');
     const items = [];
-    for await (const entry of store.list({ prefix: 'stickers/' })) {
+    const { blobs } = await store.list({ prefix: 'stickers/' });
+    for (const entry of blobs) {
       const parts = entry.key.split('/'); // stickers/{category}/{ts}_{name}
       const name = (parts[parts.length - 1] || '').replace(/^\d+_/, '');
       items.push({
