@@ -107,10 +107,12 @@
   .sticker-note { margin-top:.8em; font-size:.72em; color:#8a7660; text-align:center; }
   /* ===== 手账模式 ===== */
   .stick-layer { position:absolute; inset:0; pointer-events:none; z-index:5; border-radius:inherit; }
-  .stick-item { position:absolute; pointer-events:none; touch-action:none; }
+  .stick-item { position:absolute; pointer-events:auto; touch-action:none; cursor:pointer; }
   .page.editing .stick-item { pointer-events:auto; cursor:grab; }
   .stick-item img { width:100%; display:block; pointer-events:none; -webkit-user-drag:none; user-select:none; }
   .stick-item.sel { outline:2px dashed rgba(212,169,78,.9); outline-offset:2px; border-radius:4px; }
+ .stick-item .del { position:absolute; top:-13px; right:-13px; width:27px; height:27px; border-radius:50%; background:rgba(186,74,74,.95); color:#fff; font-size:17px; font-weight:600; display:none; align-items:center; justify-content:center; cursor:pointer; z-index:3; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+ .stick-item.sel .del { display:flex; }
   .page.editing .p-title, .page.editing .p-body {
     outline:1px dashed rgba(140,110,60,.5); outline-offset:3px; border-radius:4px; cursor:text;
   }
@@ -136,15 +138,6 @@
   }
   .sp-item:active { border-color:rgba(232,201,122,.6); }
   .sp-item img { max-width:86%; max-height:86%; object-fit:contain; }
-  #stickBar {
-    position:fixed; left:50%; bottom:112px; transform:translateX(-50%); z-index:26;
-    background:rgba(20,28,44,.97); border:1px solid rgba(232,201,122,.4); border-radius:24px;
-    display:none; align-items:center; padding:4px 8px;
-  }
-  #stickBar.show { display:flex; }
-  #stickBar button { background:none; border:none; color:#f5ecd7; font-size:1.05em; padding:.35em .55em; cursor:pointer; }
-  #stickBar button:active { color:#e8c97a; }
-  #stickBar .sep { width:1px; height:18px; background:rgba(255,255,255,.15); margin:0 2px; }
   .toast {
     position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:40;
     background:rgba(20,28,44,.96); color:#f5ecd7; border:1px solid rgba(232,201,122,.4);
@@ -234,11 +227,6 @@ body.lite .page.lcur{ display:flex; }
         <p>写手账的规矩就一条：怎么开心怎么来。</p>
       </div>
       <div style="margin-top:auto;text-align:right;font-size:.72em;color:#a08d72;">—— KK</div>
-      <img src="stickers/star_gold.png" style="position:absolute;left:81%;top:3%;width:12%;transform:rotate(-6deg);z-index:6;">
-      <img src="stickers/moon.png" style="position:absolute;left:4%;top:3%;width:12%;transform:rotate(4deg);z-index:6;">
-      <img src="stickers/flower_pink.png" style="position:absolute;left:6%;top:80%;width:14%;transform:rotate(-8deg);z-index:6;">
-      <img src="stickers/heart_red.png" style="position:absolute;left:80%;top:79%;width:13%;transform:rotate(8deg);z-index:6;">
-      <img src="stickers/butterfly.png" style="position:absolute;left:56%;top:83%;width:10%;transform:rotate(-4deg);z-index:6;">
     </div>
     <!-- 第4页 贴纸库 -->
     <div class="page" data-page="3">
@@ -650,8 +638,6 @@ body.lite .page.lcur{ display:flex; }
       <div class="p-body" style="text-align:center;color:#a08d72;font-size:.9em;">
         <div>kk是小猪🐷<div>🐷🐷🐷</div></div>
       </div>
-      <img src="stickers/heart_red.png" style="position:absolute;left:25.3%;top:46%;width:8.4%;transform:rotate(-7deg);z-index:6;">
-      <img src="stickers/heart_red.png" style="position:absolute;left:69.8%;top:52.7%;width:8%;transform:rotate(21deg);z-index:6;">
     </div>
     <!-- 第6页 封底 -->
     <div class="page cover" data-page="5">
@@ -674,20 +660,10 @@ body.lite .page.lcur{ display:flex; }
 <!-- 手账：贴纸面板 -->
 <div id="stickerPanel">
   <div class="sp-head">
-    <span class="sp-title">点贴纸贴到这一页 · 拖动摆放 · 选中可旋转缩放</span>
+    <span class="sp-title">点贴纸贴到这一页 ·单指拖动 ·双指旋转缩放 ·点 ×删除</span>
     <button id="spDone">✓ 完成</button>
   </div>
   <div class="sp-list" id="spList"></div>
-</div>
-<!-- 手账：贴纸操作条 -->
-<div id="stickBar">
-  <button id="sbDel" title="删除">🗑</button>
-  <span class="sep"></span>
-  <button id="sbRotL" title="左转">↺</button>
-  <button id="sbRotR" title="右转">↻</button>
-  <span class="sep"></span>
-  <button id="sbMinus" title="变小">－</button>
-  <button id="sbPlus" title="变大">＋</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -741,7 +717,7 @@ body.lite .page.lcur{ display:flex; }
   // 左右点击区翻页
   const book = document.getElementById('book');
   book.addEventListener('click', function(e) {
-    if (editing) return; // 手账编辑中不翻页
+    if (editing) { if (!e.target.closest('.stick-item')) selectSticker(null); return; } // 手账编辑中不翻页
     if (e.target.closest('.toc-item')) return; // 目录跳转优先，不触发翻页
     const r = book.getBoundingClientRect();
     const x = e.clientX - r.left;
@@ -810,6 +786,15 @@ body.lite .page.lcur{ display:flex; }
     const img = document.createElement('img');
     img.src = src; img.draggable = false;
     el.appendChild(img);
+        const del = document.createElement('span');
+    del.className = 'del'; del.textContent = '×';
+    del.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); });
+    del.addEventListener('click', function (e) {
+      e.stopPropagation();
+      el.remove();
+      if (selSticker === el) selectSticker(null);
+    });
+    el.appendChild(del);
     layer.appendChild(el);
     makeDraggable(el);
     return el;
@@ -828,40 +813,84 @@ body.lite .page.lcur{ display:flex; }
   function selectSticker(el) {
     if (selSticker) selSticker.classList.remove('sel');
     selSticker = el;
-    if (el) {
-      el.classList.add('sel');
-      document.getElementById('stickBar').classList.add('show');
-    } else {
-      document.getElementById('stickBar').classList.remove('show');
+    if (el) el.classList.add('sel');
+  }
+ function makeDraggable(el) {
+  const pts = new Map();
+  let mode = null, st = {};
+  function getRot() {
+    const m = el.style.transform.match(/-?[0-9.]+/);
+    return m ? parseFloat(m[0]) : 0;
+  }
+  el.addEventListener('pointerdown', function (ev) {
+    if (!editing) {
+      if (!el._hintAt || Date.now() - el._hintAt > 3500) {
+        el._hintAt = Date.now();
+        toast('先点「✎手账」进入编辑，就能摆弄贴纸了');
+      }
+      return;
     }
-  }
-
-  function makeDraggable(el) {
-    el.addEventListener('pointerdown', function (ev) {
-      if (!editing) return;
-      ev.preventDefault(); ev.stopPropagation();
-      selectSticker(el);
-      const startX = ev.clientX, startY = ev.clientY;
-      const layer = el.parentElement;
-      const lr = layer.getBoundingClientRect();
-      const origLeft = parseFloat(el.style.left) || 0;
-      const origTop = parseFloat(el.style.top) || 0;
-      const move = function (e2) {
-        const dx = (e2.clientX - startX) / lr.width * 100;
-        const dy = (e2.clientY - startY) / lr.height * 100;
-        el.style.left = Math.min(88, Math.max(-8, origLeft + dx)) + '%';
-        el.style.top = Math.min(86, Math.max(-8, origTop + dy)) + '%';
-      };
-      const up = function () {
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
-      };
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up);
-    });
-  }
-
-  // 贴纸面板：静态 13 张 + 云端素材
+    ev.preventDefault(); ev.stopPropagation();
+    try { el.setPointerCapture(ev.pointerId); } catch (err) {}
+    selectSticker(el);
+    pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    const layer = el.parentElement, lr = layer.getBoundingClientRect();
+    const vs = [...pts.values()];
+    if (vs.length === 1) {
+      mode = 'drag';
+      st = { x: vs[0].x, y: vs[0].y,
+             left: parseFloat(el.style.left) || 0, top: parseFloat(el.style.top) || 0,
+             lw: lr.width, lh: lr.height };
+    } else if (vs.length === 2) {
+      mode = 'pinch';
+      st = { dist: Math.hypot(vs[0].x - vs[1].x, vs[0].y - vs[1].y),
+             ang: Math.atan2(vs[1].y - vs[0].y, vs[1].x - vs[0].x) * 180 / Math.PI,
+             rot: getRot(), w: parseFloat(el.style.width) || 20,
+             cx: (vs[0].x + vs[1].x) / 2, cy: (vs[0].y + vs[1].y) / 2,
+             left: parseFloat(el.style.left) || 0, top: parseFloat(el.style.top) || 0,
+             lw: lr.width, lh: lr.height };
+    }
+  });
+  el.addEventListener('pointermove', function (ev) {
+    if (!editing || !pts.has(ev.pointerId)) return;
+    ev.preventDefault();
+    pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    const vs = [...pts.values()];
+    if (mode === 'drag' && vs.length === 1) {
+      const dx = (ev.clientX - st.x) / st.lw * 100;
+      const dy = (ev.clientY - st.y) / st.lh * 100;
+      el.style.left = Math.min(88, Math.max(-8, st.left + dx)) + '%';
+      el.style.top = Math.min(86, Math.max(-8, st.top + dy)) + '%';
+    } else if (mode === 'pinch' && vs.length === 2) {
+      const dist = Math.hypot(vs[0].x - vs[1].x, vs[0].y - vs[1].y);
+      const ang = Math.atan2(vs[1].y - vs[0].y, vs[1].x - vs[0].x) * 180 / Math.PI;
+      const scale = st.dist ? dist / st.dist : 1;
+      el.style.width = Math.min(60, Math.max(8, st.w * scale)) + '%';
+      const rot = st.rot + (ang - st.ang);
+      el.style.transform = 'rotate(' + (Math.round(rot * 10) / 10) + 'deg)';
+      const cx = (vs[0].x + vs[1].x) / 2, cy = (vs[0].y + vs[1].y) / 2;
+      const dx = (cx - st.cx) / st.lw * 100;
+      const dy = (cy - st.cy) / st.lh * 100;
+      el.style.left = Math.min(88, Math.max(-8, st.left + dx)) + '%';
+      el.style.top = Math.min(86, Math.max(-8, st.top + dy)) + '%';
+    }
+  });
+  const end = function (ev) {
+    pts.delete(ev.pointerId);
+    const vs = [...pts.values()];
+    if (!vs.length) { mode = null; return; }
+    if (vs.length === 1) {
+      const layer = el.parentElement, lr = layer.getBoundingClientRect();
+      mode = 'drag';
+      st = { x: vs[0].x, y: vs[0].y,
+             left: parseFloat(el.style.left) || 0, top: parseFloat(el.style.top) || 0,
+             lw: lr.width, lh: lr.height };
+    }
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+}
+// 贴纸面板：静态 13 张 + 云端素材
   const spList = document.getElementById('spList');
   async function renderPanel() {
     spList.innerHTML = '';
@@ -903,6 +932,7 @@ body.lite .page.lcur{ display:flex; }
       return;
     }
     editing = true;
+    toast('单指拖动 ·双指旋转缩放 ·点贴纸角上的 ×删除');
     p.classList.add('editing');
     const t = p.querySelector('.p-title');
     const b = p.querySelector('.p-body');
@@ -957,24 +987,6 @@ body.lite .page.lcur{ display:flex; }
     editBtn.style.background = '';
     editBtn.style.color = '';
     editBtn.style.borderColor = '';
-  }
-
-  // 贴纸操作条
-  document.getElementById('sbDel').onclick = () => { if (selSticker) { selSticker.remove(); selectSticker(null); } };
-  document.getElementById('sbRotL').onclick = () => rotateSticker(-15);
-  document.getElementById('sbRotR').onclick = () => rotateSticker(15);
-  document.getElementById('sbMinus').onclick = () => scaleSticker(-3);
-  document.getElementById('sbPlus').onclick = () => scaleSticker(3);
-  function rotateSticker(d) {
-    if (!selSticker) return;
-    const m = selSticker.style.transform.match(/-?[\d.]+/);
-    const cur = m ? parseFloat(m[0]) : 0;
-    selSticker.style.transform = 'rotate(' + Math.round((cur + d) * 10) / 10 + 'deg)';
-  }
-  function scaleSticker(d) {
-    if (!selSticker) return;
-    const cur = parseFloat(selSticker.style.width) || 20;
-    selSticker.style.width = Math.min(60, Math.max(8, Math.round((cur + d) * 10) / 10)) + '%';
   }
 
   // 轻提示
