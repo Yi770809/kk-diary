@@ -113,6 +113,7 @@
   .stick-item.sel { outline:2px dashed rgba(212,169,78,.9); outline-offset:2px; border-radius:4px; }
  .stick-item .del { position:absolute; top:-13px; right:-13px; width:27px; height:27px; border-radius:50%; background:rgba(186,74,74,.95); color:#fff; font-size:17px; font-weight:600; display:none; align-items:center; justify-content:center; cursor:pointer; z-index:3; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
  .stick-item.sel .del { display:flex; }
+ .stick-item.sel::before { content:''; position:absolute; inset:-30px; }
   .page.editing .p-title, .page.editing .p-body {
     outline:1px dashed rgba(140,110,60,.5); outline-offset:3px; border-radius:4px; cursor:text;
   }
