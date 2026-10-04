@@ -168,6 +168,8 @@ body.lite .book{ transform-style:flat; -webkit-transform-style:flat; }
 body.lite .page{ transition:none !important; transform:none !important; -webkit-transform:none !important; backface-visibility:visible; -webkit-backface-visibility:visible; display:none; }
 body.lite .page.lcur{ display:flex; }
 @supports not (aspect-ratio: 3 / 4.2){ .book{ height:min(132vw, 602px); } }
+  #addBtn { position:fixed; top:12px; right:14px; z-index:45; width:42px; height:42px; border-radius:50%; border:1px solid rgba(232,201,122,.55); background:rgba(20,28,44,.88); color:#e8c97a; font-size:23px; font-weight:600; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,.35); }
+  #addBtn:active { background:rgba(232,201,122,.25); }
 </style>
 </head>
 <body>
@@ -760,6 +762,7 @@ body.lite .page.lcur{ display:flex; }
   </div>
   <div class="sp-list" id="spList"></div>
 </div>
+<button id="addBtn" title="新建一页" onclick="addNewPage()">＋</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -773,8 +776,8 @@ body.lite .page.lcur{ display:flex; }
     '<div class="st"><img src="stickers/'+n+'.png" alt="'+n+'"><span>'+n.replace('_',' ')+'</span></div>'
   ).join('');
 
-  const pages = document.querySelectorAll('.page');
-  const total = pages.length;
+  let pages = document.querySelectorAll('.page');
+  let total = pages.length;
   let current = 0;
   try{ if(localStorage.getItem('kk_lite')==='1' || location.search.indexOf('lite=1')>=0) document.body.classList.add('lite'); }catch(e){}
   window.addEventListener('load', function(){ var a=document.getElementById('liteLink'); if(a && document.body.classList.contains('lite')) a.textContent='切回翻书模式'; });
@@ -852,6 +855,7 @@ body.lite .page.lcur{ display:flex; }
       const r = await fetch('https://kk-diary.netlify.app/.netlify/functions/diary');
       diaryData = await r.json();
     } catch (e) { diaryData = { pages: {} }; }
+    restoreUserPages();
     renderDiary();
   }
 
@@ -1093,6 +1097,43 @@ body.lite .page.lcur{ display:flex; }
     toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
   }
 
+    // ===== new page (add button) =====
+  function coverEl() { return document.querySelector('.page.cover[data-page="5"]'); }
+  function makeUserPage(id) {
+    const np = document.createElement('div');
+    np.className = 'page'; np.dataset.page = id;
+    const t = document.createElement('div'); t.className = 'p-title'; t.textContent = '新的一页';
+    const b = document.createElement('div'); b.className = 'p-body'; b.innerHTML = '<p><br></p>';
+    const l = document.createElement('div'); l.className = 'stick-layer';
+    np.appendChild(t); np.appendChild(b); np.appendChild(l);
+    return np;
+  }
+  function addNewPage() {
+    if (editing) { toast('先点「✓ 完成」再新建'); return; }
+    const id = 'u' + Date.now();
+    const np = makeUserPage(id);
+    const cov = coverEl(); if (!cov) return;
+    cov.parentNode.insertBefore(np, cov);
+    EDITABLE[id] = true;
+    pages = document.querySelectorAll('.page'); total = pages.length;
+    current = Array.prototype.indexOf.call(pages, np);
+    render();
+    enterEdit();
+    toast('新页在书尾 · 写完点「✓ 完成」自动存');
+  }
+  function restoreUserPages() {
+    const have = new Set(Array.prototype.map.call(document.querySelectorAll('.page'), p => p.dataset.page));
+    const cov = coverEl(); if (!cov) return;
+    let added = false;
+    Object.keys(diaryData.pages || {}).forEach(k => {
+      if (k.charAt(0) !== 'u' || have.has(k)) return;
+      const np = makeUserPage(k);
+      EDITABLE[k] = true;
+      cov.parentNode.insertBefore(np, cov);
+      added = true;
+    });
+    if (added) { pages = document.querySelectorAll('.page'); total = pages.length; }
+  }
   render();
   loadDiary();
   renderPanel();
