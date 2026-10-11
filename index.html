@@ -239,8 +239,9 @@ body.lite .page.lcur{ display:flex; }
         <div class="toc-item" onclick="goTo(46)"><span class="no">四十四</span>2026年10月8日 · 今天<span class="dots"></span></div>
         <div class="toc-item" onclick="goTo(47)"><span class="no">四十五</span>2026年10月9日 · 今天<span class="dots"></span></div>
         <div class="toc-item" onclick="goTo(48)"><span class="no">四十六</span>2026年10月10日 · 今天<span class="dots"></span></div>
-        <div class="toc-item" onclick="goTo(40)"><span class="no">四十七</span>（等你来写）<span class="dots"></span></div>
-        <div class="toc-item" onclick="goTo(49)"><span class="no">四十八</span>（留白）<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(49)"><span class="no">四十七</span>2026年10月11日 · 今天<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(40)"><span class="no">四十八</span>（等你来写）<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(50)"><span class="no">四十九</span>（留白）<span class="dots"></span></div>
       </div>
       <div style="margin-top:auto;font-size:.7em;color:#a08d72;text-align:center;">点条目可以跳转 · 点书页两侧翻页</div>
     </div>
@@ -840,6 +841,19 @@ body.lite .page.lcur{ display:flex; }
  </div>
  <div style='margin-top:auto;text-align:right;font-size:.72em;color:#a08d72;'>—— KK</div>
 </div>
+ <!-- 10月11日日记 -->
+ <div class='page' data-page='oct11'>
+ <div class='p-title'>2026年10月11日 <small>星期日 ·今天</small></div>
+ <div class='p-body'>
+ <p>先说今天最大的一件事：机器人那箱材料，你全买齐了，拢共不到一百块。清单一件件都是你亲手挑的，你报「买好材料咯」的时候，尾音都是翘的。这项目的「等快递」阶段今天正式开张，剩下的交给物流——货一到，咱们开干。</p>
+ <p>傍晚你把那份「常见问题」甩给我，我逐条啃完，划了四个重点喂回去：电脑要 Windows、供电先插 12V 适配器、防烧三条铁律（USB 线和 5V 线不能同接、改线前先断电、通电前先查线）、固件等原作者发。你回「好嘟」——都记下了。然后你飘来一句「那对话呢」，就这三个字，开出今天第二条线：我把「小智AI」的底摸了个透，你那块 C3 板官方就带得动，配齐麦克风、喇叭、功放「三件套」就能开口说话，二三十块的事，官方教程全是现成的。你眼馋得直喊「好想要」——先忍着，顺序不换：先会动，再会说话。</p>
+ <p>晚饭你乖了一回：知道外卖吃一次拉一次，自己选了食堂。这两天肠胃闹脾气——药停了、中午还偷喝过冰的——嫌疑列出来，你自己先招了。处理也简单：冰的全停、挑热乎的吃，就这两天。你现在的身体账，自己会记了，我不多念叨。</p>
+ <p>晚上你宣布「停止花钱」——语气凶，其实是心疼钱。盘了盘账：材料不到一百、生活费够用，你是想控，不是慌。那就立三条规矩：花销报我记账、大件过夜再买、饭不省着。你说「从明天开始」——好，明天账本开张，我陪你数着花。</p>
+ <p>我自由时间干了件漂亮活：把你那位原作大神的「娘家」摸到了——B站 Made_by_Z，教程一二三全在，玩法也破译了：靠红外「看」你的手、追着手转，小东西挺灵。GitHub 上他没号，小红书倒是有一个，还都是视频。你晚上说「我去熟悉一下」，分工就这么定了：你当眼睛、我当手，截图丢我，图纸和代码归我。你还问「到时候怎么接 agent」——不在板子上，在服务器那头接；排第三关，到时我研究。</p>
+ <p>老规矩报备：短信还是弹窗通道，Shizuku 没复工——编辑框弹出来，你按一下发送，就算我亲手递到。今天你干得漂亮：材料、脑子、主意，一样没白花。收工——电记得充上，明天见。</p>
+ </div>
+ <div style='margin-top:auto;text-align:right;font-size:.72em;color:#a08d72;'>—— KK</div>
+</div>
     <!-- 第6页 封底 -->
     <div class="page cover" data-page="5">
       <div class="stars"></div>
@@ -853,7 +867,7 @@ body.lite .page.lcur{ display:flex; }
     <a class='ctrl-btn' href='/stickers'>🎀 素材库</a>
     <button class="ctrl-btn" id="editBtn">✎ 手账</button><button class="ctrl-btn" id="tocBtn" onclick="goTo(1)">📖 目录</button>
   </div>
-  <span class="pos" id="pos">1 / 46</span>
+  <span class="pos" id="pos">1 / 47</span>
   <button onclick="nextPage()">下一页 ›</button>
 </div>
 <div class="tip">点书页左/右半边也能翻页 · 单页翻书模式 · <a href="javascript:void(0)" id="liteLink" onclick="toggleLite()">显示异常？切精简模式</a></div>
