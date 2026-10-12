@@ -1,0 +1,3 @@
+# KK日记 · 私人小本子，谢绝收录
+User-agent: *
+Disallow: /
