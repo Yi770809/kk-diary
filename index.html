@@ -12,6 +12,7 @@
      like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=0b673e3a-9b2d-48be-9805-5f14450ad245
      Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex,nofollow,noarchive">
 <title>KK的日记</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -241,7 +242,8 @@ body.lite .page.lcur{ display:flex; }
         <div class="toc-item" onclick="goTo(48)"><span class="no">四十六</span>2026年10月10日 · 今天<span class="dots"></span></div>
         <div class="toc-item" onclick="goTo(49)"><span class="no">四十七</span>2026年10月11日 · 今天<span class="dots"></span></div>
         <div class="toc-item" onclick="goTo(40)"><span class="no">四十八</span>（等你来写）<span class="dots"></span></div>
-        <div class="toc-item" onclick="goTo(50)"><span class="no">四十九</span>（留白）<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(51)"><span class="no">四十九</span>（留白）<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(50)"><span class="no">五十</span>账本 · 过闸<span class="dots"></span></div>
       </div>
       <div style="margin-top:auto;font-size:.7em;color:#a08d72;text-align:center;">点条目可以跳转 · 点书页两侧翻页</div>
     </div>
@@ -854,7 +856,82 @@ body.lite .page.lcur{ display:flex; }
  </div>
  <div style='margin-top:auto;text-align:right;font-size:.72em;color:#a08d72;'>—— KK</div>
 </div>
-    <!-- 第6页 封底 -->
+    <!-- 账本 · 过闸 -->
+ <div class="page" data-page="ledger">
+ <div class="p-title">账本 <small>过闸 · 口令锁</small></div>
+ <div class="p-body">
+ <div id="lg-lock">
+ <p style="margin:.4em 0 1em;color:#8a7a62;font-size:.86em;">这页上了锁——输对口令才见得着。</p>
+ <div style="display:flex;gap:8px;align-items:center;">
+ <input id="lg-pass" type="password" placeholder="口令" autocomplete="off" style="flex:1;min-width:0;padding:9px 12px;border:1px solid #cbb98f;border-radius:8px;background:#fffdf5;font-size:1em;color:#5a4a32;outline:none;">
+ <button id="lg-open" style="padding:9px 16px;border:none;border-radius:8px;background:#b0885a;color:#fff;font-size:.95em;cursor:pointer;white-space:nowrap;">开闸</button>
+ </div>
+ <p id="lg-msg" style="margin-top:.8em;font-size:.82em;color:#b4574a;min-height:1.2em;"></p>
+ </div>
+ <div id="lg-view" style="display:none;"></div>
+ </div>
+ <div style="margin-top:auto;text-align:right;font-size:.72em;color:#a08d72;">—— KK</div>
+ <style>
+ #lg-view .lg-sec{margin:0 0 1.05em;}
+ #lg-view .lg-h{font-size:.82em;color:#8a6f4a;letter-spacing:.08em;border-bottom:1px dashed #d8c9a8;padding-bottom:.25em;margin-bottom:.5em;}
+ #lg-view .lg-tb{width:100%;border-collapse:collapse;font-size:.86em;}
+ #lg-view .lg-tb td{padding:.32em .2em;vertical-align:top;color:#5a4a32;}
+ #lg-view .lg-tb td.num{text-align:right;white-space:nowrap;font-family:Georgia,serif;}
+ #lg-view .lg-tb td.dt{color:#8a7a62;font-size:.92em;white-space:nowrap;padding-right:.5em;}
+ #lg-view .lg-sub{font-size:.85em;color:#a08d72;}
+ #lg-view .lg-ul{margin:0;padding-left:1.15em;font-size:.86em;line-height:1.7;color:#5a4a32;}
+ #lg-view .lg-note{margin-top:.45em;font-size:.82em;color:#b4574a;}
+ #lg-view .lg-upd{font-size:.78em;color:#a08d72;margin-bottom:.7em;}
+ </style>
+ <!--LEDGER-CIPHER-->
+ <script id="ledger-cipher" type="application/json">{"v":1,"iter":200000,"salt":"S/UE4iHGhdTcJgQeUKt7KA==","iv":"xusczPjaCDzTQ3gE","ct":"2UcHRiLfYWlDSwZ7KSTLzzACxLRcbdJa2unsmXBZ2nQRMeOKOzFdzYOyddNEEJ2zf+0UoSTOMi42A4RQl7Fka9vTGctiMKrvmklCfEzBv2lbyiNN4YlhC583fjv4831YUIeBkg6yR5Ry2VYbfGo3JMwQ38LMSgzu5qAtNecNqClIscM6Fvn8wKCNrep2WqQKkSY9fCtVHAxdMi4kVAEd0Awy1B8uEasUu7yE4NcZhZqAFRIpKQa3UWqKSYMPK32nXh3WYY/MXYNLHvsKvAmnPO5m/o26rMuXYXRB/pCOrzl7si/Bdb1aLkXUAWgAEaAjuwvSyLl7vZwwbP/HZcNOOKkhedUqZU0UCrhqKNwuqULZzuFHG3qZVBxNWZ6p2cLst5HnDcxn6HYpYWxTXFljMxbvAM/Ud4IS5sKuxuHprC7u4RApucPjj6f9aWLIkRLQQu99UrILqymH/wmJ86kPNZVMSBEsLaA1OPPW0ErD8VYC2YwYgg4pY/oUHC3zHqPej0AO6WeDpt03eHUPEJyk1QGL30z/YcF0nwwjZ04sadY1qld+zVW57FlPHETfAX4c8mKPuURklpLW0YY3m8p5fSZRy3uBekavaAiZvdXOs3cFVVhGgtjD6p3L82n6eee3TPM/6mAj6AUh3Nl7ocbpVS/PhFHTKI9y6uJp9D/BzsNs/JbHKd0xBbDl6rvQZ+eXSCOMVHaE61cNNsMNsKF+jxAJ672hBcJmRE111PA9TE9DETfR8SQKdfi8gWPO07Giu5qZA9vuEY40KUJAcu6uUgfmKTIv9eL2P8vrSufCkwUWznwxQM58GY/SvXp9MRfnswR+A0ItOaiOl2RRgf/rHZ4TTQXxoozDcU3UHCCTeE+/Z3cZSRagP9HpDGFmcD+rx6PaOnosgEFKfjYkxmIAL/Jl3Flv6ZvXUUFMk1kjtZG250m/x5fw+L+LJ799TTEAKB7ce45t8OR/lsBNBHE36IFaS3h/QurTWTi2vgoYHl7uKEVtlSsT+jhWZyPjuOqPMDa4yDBWrALum2Vv+8MwUESQCrDl8NatQdFRLSFClxVveFAdt08hyyof1wGotr8Iz12Btp8ui3UQYemjNW9uLFhJElVxo+Bo3S2cbLt2Up4q/vD1+gRB+s2FN9Fqp20nsj7cpOQ4v2B880kCgBe+US0F1bRJgcaFaSKAglXMPseVJCuGnZtVh0OOJ4KV6fxsyhLEdEnu2mW06iCCD/cbWXY0yspRnuFuWxeu3m7UQjiDvNCpJxzEofZlpg8Xc8aRG+IorrY+FGD9YbIEiIRx70Z4M57wrb20ZUfdkDlF"}</script>
+ <!--/LEDGER-CIPHER-->
+ <script>
+ (function(){
+ var b64d=function(s){var t=atob(s),r=new Uint8Array(t.length);for(var i=0;i<t.length;i++)r[i]=t.charCodeAt(i);return r;};
+ function renderLedger(d){
+ var v=document.getElementById('lg-view'),h='';
+ h+='<div class="lg-upd">更新：'+(d.updated||'')+(d.tag?(' · '+d.tag):'')+'</div>';
+ h+='<div class="lg-sec"><div class="lg-h">余额快照</div><table class="lg-tb">';
+ (d.balance||[]).forEach(function(r){h+='<tr><td>'+r[0]+'</td><td class="num">'+r[1]+'</td></tr>';});
+ h+='</table>'+(d.bridge?('<div class="lg-note">'+d.bridge+'</div>'):'')+'</div>';
+ h+='<div class="lg-sec"><div class="lg-h">过闸名额</div><ul class="lg-ul">';
+ (d.quota||[]).forEach(function(x){h+='<li>'+x+'</li>';});
+ h+='</ul></div>';
+ h+='<div class="lg-sec"><div class="lg-h">流水</div><table class="lg-tb">';
+ (d.flows||[]).forEach(function(r){h+='<tr><td class="dt">'+r[0]+'</td><td>'+r[1]+(r[3]?('<div class="lg-sub">'+r[3]+'</div>'):'')+'</td><td class="num">'+r[2]+'</td></tr>';});
+ h+='</table></div>';
+ h+='<div class="lg-sec"><div class="lg-h">闸规</div><ul class="lg-ul">';
+ (d.rules||[]).forEach(function(x){h+='<li>'+x+'</li>';});
+ h+='</ul></div>';
+ if(d.todo&&d.todo.length){h+='<div class="lg-sec"><div class="lg-h">待办</div><ul class="lg-ul">';d.todo.forEach(function(x){h+='<li>'+x+'</li>';});h+='</ul></div>';}
+ v.innerHTML=h;
+ }
+ async function openLedger(pass){
+ var cfg=JSON.parse(document.getElementById('ledger-cipher').textContent);
+ var enc=new TextEncoder();
+ var km=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+ var key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64d(cfg.salt),iterations:cfg.iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+ var pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(cfg.iv)},key,b64d(cfg.ct));
+ return JSON.parse(new TextDecoder().decode(pt));
+ }
+ ['lg-lock','lg-view'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',function(e){e.stopPropagation();});});
+ document.getElementById('lg-open').addEventListener('click',async function(){
+ var btn=this,msg=document.getElementById('lg-msg'),pass=document.getElementById('lg-pass').value||'';
+ if(!pass){msg.textContent='口令先填上。';return;}
+ btn.disabled=true;btn.textContent='…';msg.textContent='';
+ try{
+ var d=await openLedger(pass);
+ document.getElementById('lg-lock').style.display='none';
+ renderLedger(d);
+ document.getElementById('lg-view').style.display='block';
+ }catch(e){msg.textContent='不对。再想想。';btn.disabled=false;btn.textContent='开闸';}
+ });
+ })();
+ </script>
+ </div>
+
+ <!-- 第6页 封底 -->
     <div class="page cover" data-page="5">
       <div class="stars"></div>
       <div class="bookname" style="font-size:1.2em;letter-spacing:.2em;">我们<br>今年 · 明年 · 年年</div>
