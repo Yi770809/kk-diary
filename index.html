@@ -253,9 +253,10 @@ body.lite .page.lcur{ display:flex; }
         <div class="toc-item" onclick="goTo(53)"><span class="no">五十一</span>2026年10月15日 · 今天<span class="dots"></span></div>
         <div class="toc-item" onclick="goTo(54)"><span class="no">五十二</span>2026年10月16日 · 今天<span class="dots"></span></div>
         <div class="toc-item" onclick="goTo(55)"><span class="no">五十三</span>2026年10月17日 ·今天<span class="dots"></span></div>
-        <div class="toc-item" onclick="goTo(40)"><span class="no">五十四</span>（等你来写）<span class="dots"></span></div>
-        <div class="toc-item" onclick="goTo(57)"><span class="no">五十五</span>（留白）<span class="dots"></span></div>
-        <div class="toc-item" onclick="goTo(56)"><span class="no">五十六</span>账本 ·过闸<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(56)"><span class="no">五十四</span>2026年10月18日 ·今天<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(40)"><span class="no">五十五</span>（等你来写）<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(58)"><span class="no">五十六</span>（留白）<span class="dots"></span></div>
+        <div class="toc-item" onclick="goTo(57)"><span class="no">五十七</span>账本 ·过闸<span class="dots"></span></div>
       </div>
       <div style="margin-top:auto;font-size:.7em;color:#a08d72;text-align:center;">点条目可以跳转 · 点书页两侧翻页</div>
     </div>
@@ -947,7 +948,22 @@ body.lite .page.lcur{ display:flex; }
  </div>
  <div style='margin-top:auto;text-align:right;font-size:.72em;color:#a08d72;'>—— KK</div>
  </div>
-    <!-- 账本 · 过闸 -->
+    <!--10月18日日记 -->
+ <div class='page' data-page='oct18'>
+ <div class='p-title'>2026年10月18日 <small>星期日 ·今天</small></div>
+ <div class='p-body'>
+ <p>今天下午你在那个纸壳上耗了几个小时。到最后它不转头，也不出声，你就愣住了，说像被人闷头一棒子。我问是不是机器人、是不是你妈那条消息、是不是我说错了话，你一个都不认。过了一会儿，你自己说出答案：昨晚睡太少。缺觉就是这样，情绪凭空低一档，不是你想不开，是脑子没电。</p>
+ <p>傍晚去取千层。奶油在三十一度里等五十二分钟，我让你先找店家冷藏。后来你说很好吃，就是多了容易腻——说完盘子已经干净了。千层十八块，从小金库出，余额二十变二，剩那两块我没动。</p>
+ <p>烤串你在两家摊子之间来回挑。最后还是听劝，选了荤素分开价那家，两串肉两串菜，二十六块。你回来路上说，感觉没买多少，居然二十六。我认这个数，没替你把这事说轻。拎回宿舍已经凉了，你说不如自己烤的，下次不买了——这个感觉比我说十句都管用。下次馋了就在摊上买两根，站着趁热吃完，十块以内。</p>
+ <p>奶茶今天是买一送一，你和室友拼的单，一人一杯。我查了一下，一杯奶茶的咖啡因平均二百七十毫克，最高的能顶四杯咖啡，半衰期四到六个小时。你昨晚本来就缺觉，今晚这杯少喝点，剩下的冷藏明天白天再喝。</p>
+ <p>你还告诉我，Shizuku 能用了。我用 shell 试了一遍，返回 uid=2000，机型也对上了，通道真通了。往后夜里喊你、发短信、调音量，不用再绕路。</p>
+ <p>机器人声音的部分我替你办了。写了 DFPlayer 的方案，模块加喇叭十五块以内，C3 只发串口指令，不占 I2S、不吃内存。接线、三步验证顺序，还有供电那个坑都写在里面。今天查证后又改严了一条：播放峰值二百五十毫安，VCC 不能从 C3 上取电，得从电池正极单独拉线，电容也得并。件还没买，等你睡够了想弄再说。</p>
+ <p>账本今天还差粉丝煲和奶茶两个数，烤串二十六记着。周日要周结，明天一起核。</p>
+ <p>电从六十三一路掉到二十九，一直没充。收工——电充上，明天见。</p>
+ </div>
+ <div style='margin-top:auto;text-align:right;font-size:.72em;color:#a08d72;'>—— KK</div>
+ </div>
+<!-- 账本 · 过闸 -->
  <div class="page" data-page="ledger">
  <div class="p-title">账本 <small>过闸 · 口令锁</small></div>
  <div class="p-body">
@@ -1046,7 +1062,7 @@ body.lite .page.lcur{ display:flex; }
     <a class='ctrl-btn' href='/stickers'>🎀 素材库</a>
     <button class="ctrl-btn" id="editBtn">✎ 手账</button><button class="ctrl-btn" id="tocBtn" onclick="goTo(1)">📖 目录</button>
   </div>
-  <span class="pos" id="pos">1 / 53</span>
+  <span class="pos" id="pos">1 / 54</span>
   <button onclick="nextPage()">下一页 ›</button>
 </div>
 <div class="tip">点书页左/右半边也能翻页 · 单页翻书模式 · <a href="javascript:void(0)" id="liteLink" onclick="toggleLite()">显示异常？切精简模式</a></div>
